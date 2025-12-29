@@ -44,6 +44,8 @@ variable mToolbar as ObjcObject
 variable mDelegate as ObjcObject
 variable mToolbarItems as Array
 
+
+
 unsafe handler DefaultItems(in Toolbar as ObjcId) returns ObjcObject
 	log "DefaultItems"
 	return mToolbarItemsIdentifiers
@@ -76,6 +78,7 @@ handler InsertedIntoToolbar(in Toolbar as ObjcId, in Identifier as ObjcId, in Fl
 	end unsafe
 end handler
 
+
 public handler OnCreate()
 	variable aNSToolbar as ObjcObject
 	variable myWindow as Pointer
@@ -99,6 +102,31 @@ public handler OnCreate()
 
 		NSToolbarSetVisible(mToolbar, true)
 	end unsafe
+end handler
+
+
+public handler OnOpen()
+	log "OnOpen"
+--	post "if the script of me is empty then set script of me to " & myScript() to my script object
+
+	variable tObject as ScriptObject
+	resolve script object "card 1 of this stack"
+	put the result into tObject
+	if tObject exists then
+		post "set the backgroundColor of me to \qred\q" to tObject
+		get property "name" of tObject
+		log the result
+	else
+		log "No such card"
+	end if
+end handler
+
+
+handler myScript () returns String
+	--> use \q for quote, \n for newline
+	variable tScript
+	put "on DefaultItems\n put 4 \n end DefaultItems" into tScript
+	return tScript
 end handler
 
 end widget
