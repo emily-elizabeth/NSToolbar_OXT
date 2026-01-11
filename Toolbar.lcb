@@ -32,7 +32,6 @@ private foreign handler NSToolbarItemSetLabel(in aNSToolbarItem as ObjcId, in La
 private foreign handler NSWindowToolbar(in aNSWindow as Pointer, in aNSToolbar as ObjcId) returns nothing binds to "objc:AppKit.framework>NSWindow.-setToolbar:"
 
 private foreign handler NSMutableArrayArrayWithCapacity(in Capacity as CUInt) returns ObjcAutoreleasedId binds to "objc:NSMutableArray.+arrayWithCapacity:"
---- private foreign handler NSMutableArrayArrayWithCapacity(in Capacity as ObjcId) returns ObjcAutoreleasedId binds to "objc:NSMutableArray.+arrayWithCapacity:"
 private foreign handler NSMutableArrayAddObject(in aNSMutableArray as ObjcAutoreleasedId, in anObject as ObjcId) returns nothing binds to "objc:NSMutableArray.-addObject:"
 
 private foreign handler NSToolbarInsertItemWithItemIdentifier(in Toolbar as ObjcId, in Identifier as ObjcId, in pIndex as ObjcId) returns nothing binds to "objc:NSToolbar.-insertItemWithItemIdentifier:atIndex:"
@@ -86,8 +85,6 @@ public handler OnCreate()
 	unsafe
 		put NSToolbarAlloc() into aNSToolbar
 		put NSToolbarInitWithIdentifier(aNSToolbar, StringToNSString("test0565")) into mToolbar
-		--- I think this is the thing that causes 'capacity (1234567etc) is ridiculous' excetion:
-		-- put NSMutableArrayArrayWithCapacity(NumberToNSNumber(1)) into mToolbarItemsIdentifiers
 		put NSMutableArrayArrayWithCapacity(1) into mToolbarItemsIdentifiers
 		NSMutableArrayAddObject(mToolbarItemsIdentifiers, StringToNSString("world"))
 
@@ -104,29 +101,5 @@ public handler OnCreate()
 	end unsafe
 end handler
 
-
-public handler OnOpen()
-	log "OnOpen"
---	post "if the script of me is empty then set script of me to " & myScript() to my script object
-
-	variable tObject as ScriptObject
-	resolve script object "card 1 of this stack"
-	put the result into tObject
-	if tObject exists then
-		post "set the backgroundColor of me to \qred\q" to tObject
-		get property "name" of tObject
-		log the result
-	else
-		log "No such card"
-	end if
-end handler
-
-
-handler myScript () returns String
-	--> use \q for quote, \n for newline
-	variable tScript
-	put "on DefaultItems\n put 4 \n end DefaultItems" into tScript
-	return tScript
-end handler
 
 end widget
