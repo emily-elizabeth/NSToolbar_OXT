@@ -1,8 +1,8 @@
 /*
-This is a widget that uses Apple's NSToolbar
+This is a library that uses Apple's NSToolbar
 */
 
-widget org.openxtalk.widget.nstoolbar
+library org.openxtalk.library.nstoolbar
 
 metadata version is "1.0.0"
 metadata author is "Emily-Elizabeth Howard"
@@ -14,6 +14,9 @@ use com.livecode.widget
 use com.livecode.canvas
 use com.livecode.engine
 use com.livecode.library.widgetutils
+
+private foreign handler objC_NSApplicationSharedApplication() returns ObjcId binds to "objc:NSApplication.+sharedApplication"
+private foreign handler objC_NSApplicationWindowWithWindowNumber(in pSharedApplication as ObjcId, in pWindowNumber as CLong) returns ObjcId binds to "objc:NSApplication.-windowWithWindowNumber:"
 
 private foreign handler NSToolbarAlloc() returns ObjcRetainedId binds to "objc:NSToolbar.+alloc"
 private foreign handler NSToolbarInitWithIdentifier(in aNSToolbar as ObjcId, in toolbarIdentifier as ObjcId) returns ObjcId binds to "objc:NSToolbar.-initWithIdentifier:"
@@ -29,7 +32,8 @@ private foreign handler NSToolbarItemInitWithItemIdentifier(in aNSToolbarItem as
 private foreign handler NSToolbarItemSetLabel(in aNSToolbarItem as ObjcId, in Label as ObjcId) returns nothing binds to "objc:NSToolbarItem.-setLabel:"
 
 
-private foreign handler NSWindowToolbar(in aNSWindow as Pointer, in aNSToolbar as ObjcId) returns nothing binds to "objc:AppKit.framework>NSWindow.-setToolbar:"
+--private foreign handler NSWindowToolbar(in aNSWindow as Pointer, in aNSToolbar as ObjcId) returns nothing binds to "objc:AppKit.framework>NSWindow.-setToolbar:"
+private foreign handler NSWindowToolbar(in aNSWindow as ObjcID, in aNSToolbar as ObjcId) returns nothing binds to "objc:AppKit.framework>NSWindow.-setToolbar:"
 
 private foreign handler NSMutableArrayArrayWithCapacity(in Capacity as CUInt) returns ObjcAutoreleasedId binds to "objc:NSMutableArray.+arrayWithCapacity:"
 private foreign handler NSMutableArrayAddObject(in aNSMutableArray as ObjcAutoreleasedId, in anObject as ObjcId) returns nothing binds to "objc:NSMutableArray.-addObject:"
@@ -42,6 +46,18 @@ variable mToolbarItemsIdentifiers as ObjcObject
 variable mToolbar as ObjcObject
 variable mDelegate as ObjcObject
 variable mToolbarItems as Array
+
+
+
+private handler _NSWindowFromWindowID(in tWindowID as Integer) returns ObjcId
+	variable tNSSharedApplication as ObjcId
+	variable tNSWindow as ObjcId
+	unsafe
+		put objC_NSApplicationSharedApplication() into tNSSharedApplication
+		put objC_NSApplicationWindowWithWindowNumber(tNSSharedApplication, tWindowID) into tNSWindow
+	end unsafe
+	return tNSWindow
+end handler
 
 
 
@@ -78,13 +94,15 @@ handler InsertedIntoToolbar(in Toolbar as ObjcId, in Identifier as ObjcId, in Fl
 end handler
 
 
-public handler OnCreate()
+public handler BuildToolbar(in windowID as Integer) returns nothing
 	variable aNSToolbar as ObjcObject
 	variable myWindow as Pointer
 	variable tDelegate as ObjcObject
+	variable tNSWindow as ObjcId
 	unsafe
+		put _NSWindowFromWindowID(windowID) into tNSWindow
 		put NSToolbarAlloc() into aNSToolbar
-		put NSToolbarInitWithIdentifier(aNSToolbar, StringToNSString("test0565")) into mToolbar
+		put NSToolbarInitWithIdentifier(aNSToolbar, StringToNSString("test0566")) into mToolbar
 		put NSMutableArrayArrayWithCapacity(1) into mToolbarItemsIdentifiers
 		NSMutableArrayAddObject(mToolbarItemsIdentifiers, StringToNSString("world"))
 
@@ -92,14 +110,14 @@ public handler OnCreate()
 		NSToolbarSetDelegate(mToolbar, tDelegate)
 		put tDelegate into mDelegate
 
-		MCWidgetGetMyStackNativeView(myWindow)
+		--MCWidgetGetMyStackNativeView(myWindow)
 	   --	SetAllowsUserCustomization(mToolbar, true)
 
-		NSWindowToolbar(myWindow, mToolbar)
+		NSWindowToolbar(tNSWindow, mToolbar)
 
 		NSToolbarSetVisible(mToolbar, true)
 	end unsafe
 end handler
 
 
-end widget
+end library
