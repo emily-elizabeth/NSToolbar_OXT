@@ -11,7 +11,7 @@ metadata title is "Toolbar Library"
 use com.livecode.foreign
 use com.livecode.objc
 use com.livecode.widget
-use com.livecode.canvas
+--use com.livecode.canvas
 use com.livecode.engine
 use com.livecode.library.widgetutils
 
@@ -23,6 +23,7 @@ private foreign handler NSToolbarInitWithIdentifier(in aNSToolbar as ObjcId, in 
 private foreign handler NSToolbarSetDelegate(in aNSToolbar as ObjcId, in aNSToolbarDelegate as ObjcId) returns nothing binds to "objc:NSToolbar.-setDelegate:"
 private foreign handler NSToolbarSetVisible(in aNSToolbar as ObjcId, in pVisible as CBool) returns nothing binds to "objc:NSToolbar.-setVisible:"
 
+--foreign handler NSToolbarDelegateAllowedItems(in pTarget as ObjcId, in Toolbar as ObjcId) returns ObjcId binds to "objc:.-toolbarAllowedItemIdentifiers:"
 foreign handler NSToolbarDelegateAllowedItems(in pTarget as ObjcId, in Toolbar as ObjcId) returns ObjcId binds to "objc:.-toolbarAllowedItemIdentifiers:"
 foreign handler NSToolbarDelegateDefaultItems(in pTarget as ObjcId, in Toolbar as ObjcId) returns ObjcId binds to "objc:.-toolbarDefaultItemIdentifiers:"
 foreign handler NSToolbarDelegateItemForIdentifier(in pTarget as ObjcId, in Toolbar as ObjcId, in Identifier as ObjcId, in Flag as CBool) returns ObjcId binds to "objc:.-toolbar:itemForItemIdentifier:willBeInsertedIntoToolbar:"
@@ -31,9 +32,7 @@ private foreign handler NSToolbarItemAlloc() returns ObjcRetainedId binds to "ob
 private foreign handler NSToolbarItemInitWithItemIdentifier(in aNSToolbarItem as ObjcId, in Identifier as ObjcId) returns ObjcId binds to "objc:NSToolbarItem.-initWithItemIdentifier:"
 private foreign handler NSToolbarItemSetLabel(in aNSToolbarItem as ObjcId, in Label as ObjcId) returns nothing binds to "objc:NSToolbarItem.-setLabel:"
 
-
---private foreign handler NSWindowToolbar(in aNSWindow as Pointer, in aNSToolbar as ObjcId) returns nothing binds to "objc:AppKit.framework>NSWindow.-setToolbar:"
-private foreign handler NSWindowToolbar(in aNSWindow as ObjcID, in aNSToolbar as ObjcId) returns nothing binds to "objc:AppKit.framework>NSWindow.-setToolbar:"
+private foreign handler NSWindowSetToolbar(in aNSWindow as ObjcID, in aNSToolbar as ObjcId) returns nothing binds to "objc:AppKit.framework>NSWindow.-setToolbar:"
 
 private foreign handler NSMutableArrayArrayWithCapacity(in Capacity as CUInt) returns ObjcAutoreleasedId binds to "objc:NSMutableArray.+arrayWithCapacity:"
 private foreign handler NSMutableArrayAddObject(in aNSMutableArray as ObjcAutoreleasedId, in anObject as ObjcId) returns nothing binds to "objc:NSMutableArray.-addObject:"
@@ -42,6 +41,8 @@ private foreign handler NSToolbarInsertItemWithItemIdentifier(in Toolbar as Objc
 
 private foreign handler SetAllowsUserCustomization(in aNSToolbar as ObjcId, in Customization as Boolean) returns nothing binds to "objc:NSToolbar.-setAllowsUserCustomization:"
 
+
+
 variable mToolbarItemsIdentifiers as ObjcObject
 variable mToolbar as ObjcObject
 variable mDelegate as ObjcObject
@@ -49,27 +50,36 @@ variable mToolbarItems as Array
 
 
 
-private handler _NSWindowFromWindowID(in tWindowID as Integer) returns ObjcId
-	variable tNSSharedApplication as ObjcId
-	variable tNSWindow as ObjcId
-	unsafe
-		put objC_NSApplicationSharedApplication() into tNSSharedApplication
-		put objC_NSApplicationWindowWithWindowNumber(tNSSharedApplication, tWindowID) into tNSWindow
-	end unsafe
-	return tNSWindow
-end handler
-
-
-
 unsafe handler DefaultItems(in Toolbar as ObjcId) returns ObjcObject
-	log "DefaultItems"
-	return mToolbarItemsIdentifiers
+	variable tObject as ScriptObject
+	resolve script object "card 1 of this stack"
+	put the result into tObject
+	if tObject exists then
+		send function "DefaultItems" to tObject
+		log the result
+	else
+		log "No such card"
+	end if
+	
+	variable tItem as ObjcObject
+	put NSToolbarItemAlloc() into tItem
+	put NSToolbarItemInitWithItemIdentifier(tItem, StringToNSString("hello")) into tItem
+	NSToolbarItemSetLabel(tItem, StringToNSString("hello"))
+		
+	--return mToolbarItemsIdentifiers
+	return tItem
 end handler
 
 
-handler AllowedItems(in Toolbar as ObjcId) returns ObjcObject
+unsafe handler AllowedItems(in Toolbar as ObjcId) returns ObjcObject
 	log "AllowedItems"
-	return mToolbarItemsIdentifiers
+	variable tItem as ObjcObject
+	put NSToolbarItemAlloc() into tItem
+	put NSToolbarItemInitWithItemIdentifier(tItem, StringToNSString("hello")) into tItem
+	NSToolbarItemSetLabel(tItem, StringToNSString("hello"))
+		
+	--return mToolbarItemsIdentifiers
+	return tItem
 end handler
 
 
@@ -86,7 +96,7 @@ handler InsertedIntoToolbar(in Toolbar as ObjcId, in Identifier as ObjcId, in Fl
 		log StringFromNSString(Identifier)
 		variable tItem as ObjcObject
 		put NSToolbarItemAlloc() into tItem
-		put NSToolbarItemInitWithItemIdentifier(tItem, Identifier) into tItem
+		put NSToolbarItemInitWithItemIdentifier(tItem, StringToNSString("hello")) into tItem
 		NSToolbarItemSetLabel(tItem, StringToNSString("hello"))
      --		put tItem into mToolbarItems[tId]
 		return tItem
@@ -94,29 +104,68 @@ handler InsertedIntoToolbar(in Toolbar as ObjcId, in Identifier as ObjcId, in Fl
 end handler
 
 
-public handler BuildToolbar(in windowID as Integer) returns nothing
+public handler ToolbarAddItem() returns nothing
+	--[toolbarItem setLabel:@"Save"];
+    --[toolbarItem setPaletteLabel:@"Save"];
+    --// Set up a reasonable tooltip, and image
+    --// you will likely want to localize many of the item's properties
+    --[toolbarItem setToolTip:@"Save Your Document"];
+end handler
+
+
+public handler ToolbarAttach(in windowID as Integer, in toolbarIdentifier as String) returns nothing
+	if not IsMac() then
+		return
+	end if
+	
 	variable aNSToolbar as ObjcObject
-	variable myWindow as Pointer
 	variable tDelegate as ObjcObject
 	variable tNSWindow as ObjcId
 	unsafe
 		put _NSWindowFromWindowID(windowID) into tNSWindow
 		put NSToolbarAlloc() into aNSToolbar
-		put NSToolbarInitWithIdentifier(aNSToolbar, StringToNSString("test0566")) into mToolbar
-		put NSMutableArrayArrayWithCapacity(1) into mToolbarItemsIdentifiers
-		NSMutableArrayAddObject(mToolbarItemsIdentifiers, StringToNSString("world"))
+		put NSToolbarInitWithIdentifier(aNSToolbar, StringToNSString(toolbarIdentifier)) into mToolbar
+		
+		--put NSMutableArrayArrayWithCapacity(1) into mToolbarItemsIdentifiers
+		--NSMutableArrayAddObject(mToolbarItemsIdentifiers, StringToNSString("hello"))
 
-		put CreateObjcDelegate("NSToolbarDelegate", {"toolbarAllowedItemIdentifiers:":AllowedItems, "toolbarDefaultItemIdentifiers:":DefaultItems, "toolbar:itemForItemIdentifier:willBeInsertedIntoToolbar:":InsertedIntoToolbar}) into tDelegate
-		NSToolbarSetDelegate(mToolbar, tDelegate)
+		--put CreateObjcDelegate("NSToolbarDelegate", {"toolbarAllowedItemIdentifiers:":AllowedItems, "toolbarDefaultItemIdentifiers:":DefaultItems, "toolbar:itemForItemIdentifier:willBeInsertedIntoToolbar:":InsertedIntoToolbar}) into tDelegate
+		
+		put CreateObjcInformalDelegate([NSToolbarDelegateAllowedItems], {"toolbarAllowedItemIdentifiers:":AllowedItems}) into tDelegate
+		
 		put tDelegate into mDelegate
+		NSToolbarSetDelegate(mToolbar, tDelegate)
+		
+		--variable tItem as ObjcObject
+		--put NSToolbarItemAlloc() into tItem
+		--put NSToolbarItemInitWithItemIdentifier(tItem, StringToNSString("hello")) into tItem
+		--NSToolbarItemSetLabel(tItem, StringToNSString("hello"))
+		--NSMutableArrayAddObject(mToolbarItemsIdentifiers, tItem)
 
-		--MCWidgetGetMyStackNativeView(myWindow)
-	   --	SetAllowsUserCustomization(mToolbar, true)
+		--SetAllowsUserCustomization(mToolbar, true)
 
-		NSWindowToolbar(tNSWindow, mToolbar)
-
+		NSWindowSetToolbar(tNSWindow, mToolbar)
 		NSToolbarSetVisible(mToolbar, true)
+		
 	end unsafe
+end handler
+
+
+// finds the NSWindow from the windowID of the stack
+private handler _NSWindowFromWindowID(in tWindowID as Integer) returns ObjcId
+	variable tNSSharedApplication as ObjcId
+	variable tNSWindow as ObjcId
+	unsafe
+		put objC_NSApplicationSharedApplication() into tNSSharedApplication
+		put objC_NSApplicationWindowWithWindowNumber(tNSSharedApplication, tWindowID) into tNSWindow
+	end unsafe
+	return tNSWindow
+end handler
+
+
+// checks if we're running on macOS
+private handler IsMac() returns Boolean
+	return the operating system is "mac"
 end handler
 
 
