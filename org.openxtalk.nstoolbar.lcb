@@ -1,0 +1,392 @@
+/*
+  community.livecode.nstoolbar
+  All toolbar/window operations go through the ObjC glue dylib via c: bindings.
+  This avoids all objc: ffi issues with ObjcId/ObjcRetainedId type mismatches.
+*/
+
+library org.openxtalk.nstoolbar
+
+metadata version is "1.0.0"
+metadata author is "Emily-Elizabeth Howard"
+metadata title is "NSToolbar Library"
+metadata platform is "mac"
+
+use com.livecode.foreign
+use com.livecode.objc
+use com.livecode.engine
+
+-- ---------------------------------------------------------------------------
+-- Glue: item registry
+-- ---------------------------------------------------------------------------
+
+private foreign handler LCToolbarItemRegister( \
+        in pItemId   as ZStringNative, \
+        in pLabel    as ZStringNative, \
+        in pIconName as ZStringNative, \
+        in pTooltip  as ZStringNative) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarItemRegister"
+
+private foreign handler LCToolbarItemUnregister( \
+        in pItemId as ZStringNative) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarItemUnregister"
+
+private foreign handler LCToolbarItemAppendToOrder( \
+        in pItemId as ZStringNative) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarItemAppendToOrder"
+
+private foreign handler LCToolbarItemRemoveFromOrder( \
+        in pItemId as ZStringNative) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarItemRemoveFromOrder"
+
+private foreign handler LCToolbarItemsClear() \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarItemsClear"
+
+-- ---------------------------------------------------------------------------
+-- Glue: toolbar lifecycle
+-- ---------------------------------------------------------------------------
+
+private foreign handler LCToolbarCreate( \
+        in pIdentifier as ZStringNative) \
+    returns Pointer \
+    binds to "c:nstoolbar_glue>LCToolbarCreate"
+
+private foreign handler LCToolbarRelease( \
+        in pToolbar as Pointer) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarRelease"
+
+private foreign handler LCToolbarSetDisplayMode( \
+        in pToolbar as Pointer, \
+        in pMode    as CInt) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarSetDisplayMode"
+
+private foreign handler LCToolbarSetCustomizable( \
+        in pToolbar as Pointer, \
+        in pAllow   as CInt) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarSetCustomizable"
+
+private foreign handler LCToolbarAttachDelegate( \
+        in pToolbar  as Pointer, \
+        in pDelegate as Pointer) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarAttachDelegate"
+
+private foreign handler LCToolbarClearDelegate( \
+        in pToolbar as Pointer) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarClearDelegate"
+
+private foreign handler LCToolbarInsertItemAtIndex( \
+        in pToolbar as Pointer, \
+        in pItemId  as ZStringNative, \
+        in pIndex   as CInt) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarInsertItemAtIndex"
+
+private foreign handler LCToolbarRemoveItemAtIndex( \
+        in pToolbar as Pointer, \
+        in pIndex   as CInt) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarRemoveItemAtIndex"
+
+private foreign handler LCToolbarSetItemEnabled( \
+        in pToolbar as Pointer, \
+        in pItemId  as ZStringNative, \
+        in pEnabled as CInt) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarSetItemEnabled"
+
+private foreign handler LCToolbarSetVisible( \
+        in pToolbar as Pointer, \
+        in pVisible as CInt) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarSetVisible"
+
+private foreign handler LCToolbarIsVisible( \
+        in pToolbar as Pointer) \
+    returns CInt \
+    binds to "c:nstoolbar_glue>LCToolbarIsVisible"
+
+private foreign handler LCToolbarItemIsEnabled( \
+        in pToolbar as Pointer, \
+        in pItemId  as ZStringNative) \
+    returns CInt \
+    binds to "c:nstoolbar_glue>LCToolbarItemIsEnabled"
+
+-- ---------------------------------------------------------------------------
+-- Glue: delegate lifecycle
+-- ---------------------------------------------------------------------------
+
+private foreign handler LCToolbarDelegateCreate() \
+    returns Pointer \
+    binds to "c:nstoolbar_glue>LCToolbarDelegateCreate"
+
+private foreign handler LCToolbarDelegateRelease( \
+        in pDelegate as Pointer) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarDelegateRelease"
+
+-- ---------------------------------------------------------------------------
+-- Glue: window
+-- ---------------------------------------------------------------------------
+
+private foreign handler LCWindowFromNumber( \
+        in pWindowNumber as CLong) \
+    returns Pointer \
+    binds to "c:nstoolbar_glue>LCWindowFromNumber"
+
+private foreign handler LCWindowAttachToolbar( \
+        in pWindow  as Pointer, \
+        in pToolbar as Pointer) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCWindowAttachToolbar"
+
+-- ---------------------------------------------------------------------------
+-- Glue: click callback
+-- ---------------------------------------------------------------------------
+
+public foreign handler type ToolbarClickCallback( \
+        in pItemId as ZStringNative) returns nothing
+
+private foreign handler LCToolbarSetClickCallback( \
+        in pCallback as ToolbarClickCallback) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarSetClickCallback"
+
+private foreign handler LCToolbarClearClickCallback() \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarClearClickCallback"
+
+-- ---------------------------------------------------------------------------
+-- Module state
+-- ---------------------------------------------------------------------------
+
+private variable mToolbar   as optional Pointer
+private variable mDelegate  as optional Pointer
+private variable mItemOrder as List
+private variable mTarget    as optional ScriptObject
+
+-- ---------------------------------------------------------------------------
+-- Click handler
+-- ---------------------------------------------------------------------------
+
+private handler _OnToolbarItemClicked(in pItemId as ZStringNative) returns nothing
+    if mTarget exists then
+        post "toolbarItemClicked" && pItemId to mTarget
+    else
+    end if
+end handler
+
+-- ---------------------------------------------------------------------------
+-- Private helpers
+-- ---------------------------------------------------------------------------
+
+private handler IsMac() returns Boolean
+    return the operating system is "mac"
+end handler
+
+-- ---------------------------------------------------------------------------
+-- Public API
+-- ---------------------------------------------------------------------------
+
+public unsafe handler toolbarCreate( \
+        in pWindowID    as Integer, \
+        in pIdentifier  as String, \
+        in pDisplayMode as String) returns nothing
+    if not IsMac() then
+        return
+    end if
+
+    put [] into mItemOrder
+    LCToolbarItemsClear()
+    put the caller into mTarget
+
+    put LCToolbarDelegateCreate() into mDelegate
+
+    put LCToolbarCreate(pIdentifier) into mToolbar
+
+    variable tMode as Integer
+    if pDisplayMode is "iconAndLabel" then
+        put 1 into tMode
+    else if pDisplayMode is "iconOnly" then
+        put 2 into tMode
+    else if pDisplayMode is "labelOnly" then
+        put 3 into tMode
+    else
+        put 0 into tMode
+    end if
+    LCToolbarSetDisplayMode(mToolbar, tMode)
+    LCToolbarSetCustomizable(mToolbar, 1)
+
+    LCToolbarAttachDelegate(mToolbar, mDelegate)
+
+    variable tWindow as Pointer
+    put LCWindowFromNumber(pWindowID) into tWindow
+    if tWindow is nothing then
+        throw "NSToolbar: could not find window with ID" && (pWindowID formatted as string)
+    end if
+
+    LCWindowAttachToolbar(tWindow, mToolbar)
+
+    LCToolbarSetClickCallback(_OnToolbarItemClicked)
+end handler
+
+
+public unsafe handler toolbarAddItem( \
+        in pItemId   as String, \
+        in pLabel    as String, \
+        in pIconName as String, \
+        in pTooltip  as String) returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        throw "NSToolbar: call toolbarCreate first"
+    end if
+
+    LCToolbarItemRegister(pItemId, pLabel, pIconName, pTooltip)
+    LCToolbarItemAppendToOrder(pItemId)
+
+    variable tIndex as Integer
+    put the number of elements in mItemOrder into tIndex
+    push pItemId onto back of mItemOrder
+    LCToolbarInsertItemAtIndex(mToolbar, pItemId, tIndex)
+end handler
+
+
+public unsafe handler toolbarReloadItems() returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        return
+    end if
+    LCToolbarClearDelegate(mToolbar)
+    LCToolbarAttachDelegate(mToolbar, mDelegate)
+end handler
+
+
+public unsafe handler toolbarRemoveItem(in pItemId as String) returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        return
+    end if
+    variable tIndex as Integer
+    put 0 into tIndex
+    variable tKey as String
+    variable tFound as Boolean
+    put false into tFound
+    repeat for each element tKey in mItemOrder
+        if tKey is pItemId then
+            put true into tFound
+            LCToolbarRemoveItemAtIndex(mToolbar, tIndex)
+            LCToolbarItemUnregister(pItemId)
+            LCToolbarItemRemoveFromOrder(pItemId)
+            variable tNew as List
+            put [] into tNew
+            repeat for each element tKey in mItemOrder
+                if tKey is not pItemId then
+                    push tKey onto back of tNew
+                end if
+            end repeat
+            put tNew into mItemOrder
+            return
+        end if
+        put tIndex + 1 into tIndex
+    end repeat
+end handler
+
+
+public unsafe handler toolbarSetItemEnabled(in pItemId as String, in pEnabled as Boolean) returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        return
+    end if
+    if pEnabled then
+        LCToolbarSetItemEnabled(mToolbar, pItemId, 1)
+    else
+        LCToolbarSetItemEnabled(mToolbar, pItemId, 0)
+    end if
+end handler
+
+
+public unsafe handler toolbarSetCustomizable(in pCustomizable as Boolean) returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        return
+    end if
+    if pCustomizable then
+        LCToolbarSetCustomizable(mToolbar, 1)
+    else
+        LCToolbarSetCustomizable(mToolbar, 0)
+    end if
+end handler
+
+
+public unsafe handler toolbarSetVisible(in pVisible as Boolean) returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        return
+    end if
+    if pVisible then
+        LCToolbarSetVisible(mToolbar, 1)
+    else
+        LCToolbarSetVisible(mToolbar, 0)
+    end if
+end handler
+
+
+public unsafe handler toolbarIsVisible() returns Boolean
+    if not IsMac() then
+        return false
+    end if
+    if mToolbar is nothing then
+        return false
+    end if
+    return LCToolbarIsVisible(mToolbar) is 1
+end handler
+
+
+public unsafe handler toolbarItemIsEnabled(in pItemId as String) returns Boolean
+    if not IsMac() then
+        return false
+    end if
+    if mToolbar is nothing then
+        return false
+    end if
+    return LCToolbarItemIsEnabled(mToolbar, pItemId) is 1
+end handler
+
+
+public unsafe handler toolbarDestroy() returns nothing
+    LCToolbarClearClickCallback()
+    put nothing into mTarget
+    if mToolbar is not nothing then
+        LCToolbarClearDelegate(mToolbar)
+        LCToolbarRelease(mToolbar)
+        put nothing into mToolbar
+    end if
+    if mDelegate is not nothing then
+        LCToolbarDelegateRelease(mDelegate)
+        put nothing into mDelegate
+    end if
+    LCToolbarItemsClear()
+    put [] into mItemOrder
+end handler
+
+end library

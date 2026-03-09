@@ -1,0 +1,20 @@
+import module community.livecode.nstoolbar
+  use com.livecode.foreign
+  use com.livecode.engine
+  use com.livecode.string
+  use com.livecode.arithmetic
+  use com.livecode.binary
+  use com.livecode.list
+  use com.livecode.logic
+  use com.livecode.type
+  use com.livecode.system
+  use com.livecode.array
+  foreign handler type ToolbarClickCallback(in pItemId as ZStringNative) returns nothing
+  unsafe handler toolbarCreate(in pWindowID as Number, in pIdentifier as String, in pDisplayMode as String) returns nothing
+  unsafe handler toolbarAddItem(in pItemId as String, in pLabel as String, in pIconName as String, in pTooltip as String) returns nothing
+  unsafe handler toolbarReloadItems() returns nothing
+  unsafe handler toolbarRemoveItem(in pItemId as String) returns nothing
+  unsafe handler toolbarSetVisible(in pVisible as Boolean) returns nothing
+  unsafe handler toolbarPollClick() returns nothing
+  unsafe handler toolbarDestroy() returns nothing
+end module

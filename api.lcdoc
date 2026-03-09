@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dict>
+<dict>
+  <key>api_version</key>
+  <string>1.0</string>
+  <key>library</key>
+  <string>org.openxtalk.nstoolbar</string>
+  <key>entries</key>
+  <array>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarCreate</string>
+      <key>name</key>
+      <string>toolbarCreate</string>
+      <key>display name</key>
+      <string>toolbarCreate</string>
+      <key>type</key>
+      <string>command</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarCreate &lt;pWindowID&gt;, &lt;pIdentifier&gt;, &lt;pDisplayMode&gt;</string>
+      </array>
+      <key>summary</key>
+      <string>Creates a native macOS NSToolbar and attaches it to a stack window.</string>
+      <key>parameters</key>
+      <array>
+        <dict>
+          <key>name</key><string>pWindowID</string>
+          <key>type</key><string>integer</string>
+          <key>description</key><string>The windowID of the target stack, e.g. the windowID of this stack.</string>
+        </dict>
+        <dict>
+          <key>name</key><string>pIdentifier</string>
+          <key>type</key><string>string</string>
+          <key>description</key><string>A unique string identifier for the toolbar. Used by macOS to autosave toolbar configuration.</string>
+        </dict>
+        <dict>
+          <key>name</key><string>pDisplayMode</string>
+          <key>type</key><string>string</string>
+          <key>description</key><string>Controls how items are displayed. One of: "iconAndLabel", "iconOnly", "labelOnly", "default".</string>
+        </dict>
+      </array>
+      <key>description</key>
+      <string>Creates an NSToolbar with the given identifier and attaches it to the window specified by pWindowID. After calling toolbarCreate, add items with toolbarAddItem then call toolbarReloadItems to display them. The toolbarItemClicked message will be sent to the object that called toolbarCreate.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>toolbarCreate the windowID of this stack, "MyToolbar", "iconAndLabel"</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarAddItem</string>
+      <key>name</key>
+      <string>toolbarAddItem</string>
+      <key>display name</key>
+      <string>toolbarAddItem</string>
+      <key>type</key>
+      <string>command</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarAddItem &lt;pItemId&gt;, &lt;pLabel&gt;, &lt;pIconName&gt;, &lt;pTooltip&gt;</string>
+      </array>
+      <key>summary</key>
+      <string>Adds an item to the toolbar.</string>
+      <key>parameters</key>
+      <array>
+        <dict>
+          <key>name</key><string>pItemId</string>
+          <key>type</key><string>string</string>
+          <key>description</key><string>A unique identifier for this item, used in the toolbarItemClicked message.</string>
+        </dict>
+        <dict>
+          <key>name</key><string>pLabel</string>
+          <key>type</key><string>string</string>
+          <key>description</key><string>The label displayed below the icon.</string>
+        </dict>
+        <dict>
+          <key>name</key><string>pIconName</string>
+          <key>type</key><string>string</string>
+          <key>description</key><string>An SF Symbol name (macOS 11+) such as "doc.badge.plus", or an NSImage named image for older systems.</string>
+        </dict>
+        <dict>
+          <key>name</key><string>pTooltip</string>
+          <key>type</key><string>string</string>
+          <key>description</key><string>The tooltip shown on hover.</string>
+        </dict>
+      </array>
+      <key>description</key>
+      <string>Registers and inserts a toolbar item. Call toolbarReloadItems after adding all items on creation to ensure they appear. Items added after the initial toolbarReloadItems appear immediately.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>toolbarAddItem "saveDoc", "Save", "square.and.arrow.down", "Save Document"</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarReloadItems</string>
+      <key>name</key>
+      <string>toolbarReloadItems</string>
+      <key>display name</key>
+      <string>toolbarReloadItems</string>
+      <key>type</key>
+      <string>command</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarReloadItems</string>
+      </array>
+      <key>summary</key>
+      <string>Reloads all toolbar items from the delegate.</string>
+      <key>description</key>
+      <string>Forces the NSToolbar to re-query its delegate for the default item list. Call this after all toolbarAddItem calls during setup to make items appear in the toolbar immediately on creation.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>toolbarAddItem "newDoc", "New", "doc.badge.plus", "New Document"
+toolbarAddItem "saveDoc", "Save", "square.and.arrow.down", "Save Document"
+toolbarReloadItems</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarRemoveItem</string>
+      <key>name</key>
+      <string>toolbarRemoveItem</string>
+      <key>display name</key>
+      <string>toolbarRemoveItem</string>
+      <key>type</key>
+      <string>command</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarRemoveItem &lt;pItemId&gt;</string>
+      </array>
+      <key>summary</key>
+      <string>Removes a toolbar item by identifier.</string>
+      <key>parameters</key>
+      <array>
+        <dict>
+          <key>name</key><string>pItemId</string>
+          <key>type</key><string>string</string>
+          <key>description</key><string>The identifier of the item to remove.</string>
+        </dict>
+      </array>
+      <key>description</key>
+      <string>Unregisters and removes the toolbar item with the given identifier.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>toolbarRemoveItem "saveDoc"</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarSetItemEnabled</string>
+      <key>name</key>
+      <string>toolbarSetItemEnabled</string>
+      <key>display name</key>
+      <string>toolbarSetItemEnabled</string>
+      <key>type</key>
+      <string>command</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarSetItemEnabled &lt;pItemId&gt;, &lt;pEnabled&gt;</string>
+      </array>
+      <key>summary</key>
+      <string>Enables or disables a toolbar item.</string>
+      <key>parameters</key>
+      <array>
+        <dict>
+          <key>name</key><string>pItemId</string>
+          <key>type</key><string>string</string>
+          <key>description</key><string>The identifier of the item to enable or disable.</string>
+        </dict>
+        <dict>
+          <key>name</key><string>pEnabled</string>
+          <key>type</key><string>boolean</string>
+          <key>description</key><string>True to enable the item, false to disable it.</string>
+        </dict>
+      </array>
+      <key>description</key>
+      <string>Sets the enabled state of the toolbar item with the given identifier. Disabled items appear dimmed and do not respond to clicks.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>toolbarSetItemEnabled "saveDoc", false</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarSetVisible</string>
+      <key>name</key>
+      <string>toolbarSetVisible</string>
+      <key>display name</key>
+      <string>toolbarSetVisible</string>
+      <key>type</key>
+      <string>command</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarSetVisible &lt;pVisible&gt;</string>
+      </array>
+      <key>summary</key>
+      <string>Shows or hides the toolbar.</string>
+      <key>parameters</key>
+      <array>
+        <dict>
+          <key>name</key><string>pVisible</string>
+          <key>type</key><string>boolean</string>
+          <key>description</key><string>True to show the toolbar, false to hide it.</string>
+        </dict>
+      </array>
+      <key>description</key>
+      <string>Controls the visibility of the toolbar.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>toolbarSetVisible false</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarDestroy</string>
+      <key>name</key>
+      <string>toolbarDestroy</string>
+      <key>display name</key>
+      <string>toolbarDestroy</string>
+      <key>type</key>
+      <string>command</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarDestroy</string>
+      </array>
+      <key>summary</key>
+      <string>Destroys the toolbar and releases all resources.</string>
+      <key>description</key>
+      <string>Removes the toolbar from the window, releases the delegate, clears all registered items, and unregisters the click callback. Call this in closeCard or when the toolbar is no longer needed.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>on closeCard
+   toolbarDestroy
+end closeCard</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarItemClicked</string>
+      <key>name</key>
+      <string>toolbarItemClicked</string>
+      <key>display name</key>
+      <string>toolbarItemClicked</string>
+      <key>type</key>
+      <string>message</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarItemClicked &lt;pItemId&gt;</string>
+      </array>
+      <key>summary</key>
+      <string>Sent when a toolbar item is clicked.</string>
+      <key>parameters</key>
+      <array>
+        <dict>
+          <key>name</key><string>pItemId</string>
+          <key>type</key><string>string</string>
+          <key>description</key><string>The identifier of the clicked toolbar item, as passed to toolbarAddItem.</string>
+        </dict>
+      </array>
+      <key>description</key>
+      <string>This message is posted to the script object that called toolbarCreate when the user clicks a toolbar item. Handle it to respond to toolbar actions.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>on toolbarItemClicked pItemId
+   switch pItemId
+      case "newDoc"
+         answer "New Document"
+      case "saveDoc"
+         answer "Save Document"
+   end switch
+end toolbarItemClicked</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarSetCustomizable</string>
+      <key>name</key>
+      <string>toolbarSetCustomizable</string>
+      <key>display name</key>
+      <string>toolbarSetCustomizable</string>
+      <key>type</key>
+      <string>command</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarSetCustomizable &lt;pCustomizable&gt;</string>
+      </array>
+      <key>summary</key>
+      <string>Enables or disables user customization of the toolbar.</string>
+      <key>parameters</key>
+      <array>
+        <dict>
+          <key>name</key><string>pCustomizable</string>
+          <key>type</key><string>boolean</string>
+          <key>description</key><string>True to allow the user to customize the toolbar, false to prevent it.</string>
+        </dict>
+      </array>
+      <key>description</key>
+      <string>Controls whether the user can customize the toolbar by right-clicking or via View > Customize Toolbar. Customization is enabled by default. Call after toolbarCreate.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>toolbarSetCustomizable false</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarIsVisible</string>
+      <key>name</key>
+      <string>toolbarIsVisible</string>
+      <key>display name</key>
+      <string>toolbarIsVisible</string>
+      <key>type</key>
+      <string>function</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarIsVisible()</string>
+      </array>
+      <key>summary</key>
+      <string>Returns whether the toolbar is currently visible.</string>
+      <key>description</key>
+      <string>Returns true if the toolbar is visible, false if it is hidden or no toolbar has been created.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>if toolbarIsVisible() then
+   toolbarSetVisible false
+end if</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+    <dict>
+      <key>id</key>
+      <string>toolbarItemIsEnabled</string>
+      <key>name</key>
+      <string>toolbarItemIsEnabled</string>
+      <key>display name</key>
+      <string>toolbarItemIsEnabled</string>
+      <key>type</key>
+      <string>function</string>
+      <key>syntax</key>
+      <array>
+        <string>toolbarItemIsEnabled(&lt;pItemId&gt;)</string>
+      </array>
+      <key>summary</key>
+      <string>Returns whether a toolbar item is currently enabled.</string>
+      <key>parameters</key>
+      <array>
+        <dict>
+          <key>name</key><string>pItemId</string>
+          <key>type</key><string>string</string>
+          <key>description</key><string>The identifier of the toolbar item to check.</string>
+        </dict>
+      </array>
+      <key>description</key>
+      <string>Returns true if the toolbar item with the given identifier is enabled, false if it is disabled or not found.</string>
+      <key>examples</key>
+      <array>
+        <dict>
+          <key>script</key>
+          <string>if not toolbarItemIsEnabled("saveDoc") then
+   toolbarSetItemEnabled "saveDoc", true
+end if</string>
+        </dict>
+      </array>
+      <key>platform</key>
+      <array><string>mac</string></array>
+    </dict>
+
+  </array>
+</dict>
