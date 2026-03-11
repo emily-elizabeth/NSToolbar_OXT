@@ -1,5 +1,6 @@
 import module org.openxtalk.nstoolbar
   use com.livecode.foreign
+  use com.livecode.objc
   use com.livecode.engine
   use com.livecode.string
   use com.livecode.arithmetic
@@ -19,5 +20,7 @@ import module org.openxtalk.nstoolbar
   unsafe handler toolbarSetVisible(in pCustomizable as Boolean) returns nothing
   unsafe handler toolbarIsVisible() returns Boolean
   unsafe handler toolbarItemIsEnabled(in pItemId as String) returns Boolean
+  unsafe handler toolbarSetItemImage(in pItemId as String, in pImagePath as String) returns nothing
+  unsafe handler toolbarReactivate() returns nothing
   unsafe handler toolbarDestroy() returns nothing
 end module

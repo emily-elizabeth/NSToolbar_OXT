@@ -6,7 +6,7 @@
 
 library org.openxtalk.nstoolbar
 
-metadata version is "1.0.0"
+metadata version is "1.1.0"
 metadata author is "Emily-Elizabeth Howard"
 metadata title is "NSToolbar Library"
 metadata platform is "mac"
@@ -21,9 +21,9 @@ use com.livecode.engine
 
 private foreign handler LCToolbarItemRegister( \
         in pItemId   as ZStringNative, \
-        in pLabel    as ZStringNative, \
+        in pLabel    as ObjcId, \
         in pIconName as ZStringNative, \
-        in pTooltip  as ZStringNative) \
+        in pTooltip  as ObjcId) \
     returns nothing \
     binds to "c:nstoolbar_glue>LCToolbarItemRegister"
 
@@ -119,6 +119,28 @@ private foreign handler LCToolbarItemIsEnabled( \
         in pItemId  as ZStringNative) \
     returns CInt \
     binds to "c:nstoolbar_glue>LCToolbarItemIsEnabled"
+
+private foreign handler LCToolbarItemSetNSImage( \
+        in pToolbar as Pointer, \
+        in pItemId  as ZStringNative, \
+        in pImage   as Pointer) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarItemSetNSImage"
+
+private foreign handler LCToolbarItemSetImageBytes( \
+        in pToolbar as Pointer, \
+        in pItemId  as ZStringNative, \
+        in pBytes   as Data, \
+        in pLength  as CInt) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarItemSetImageBytes"
+
+private foreign handler LCToolbarItemSetImageFile( \
+        in pToolbar as Pointer, \
+        in pItemId  as ZStringNative, \
+        in pPath    as ZStringNative) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarItemSetImageFile"
 
 -- ---------------------------------------------------------------------------
 -- Glue: delegate lifecycle
@@ -251,7 +273,7 @@ public unsafe handler toolbarAddItem( \
         throw "NSToolbar: call toolbarCreate first"
     end if
 
-    LCToolbarItemRegister(pItemId, pLabel, pIconName, pTooltip)
+    LCToolbarItemRegister(pItemId, StringToNSString(pLabel), pIconName, StringToNSString(pTooltip))
     LCToolbarItemAppendToOrder(pItemId)
 
     variable tIndex as Integer
@@ -370,6 +392,32 @@ public unsafe handler toolbarItemIsEnabled(in pItemId as String) returns Boolean
         return false
     end if
     return LCToolbarItemIsEnabled(mToolbar, pItemId) is 1
+end handler
+
+
+public unsafe handler toolbarSetItemImage(in pItemId as String, in pImagePath as String) returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        return
+    end if
+    if pImagePath is empty then
+        return
+    end if
+    LCToolbarItemSetImageFile(mToolbar, pItemId, pImagePath)
+end handler
+
+
+public unsafe handler toolbarReactivate() returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        return
+    end if
+    put the caller into mTarget
+    LCToolbarSetClickCallback(_OnToolbarItemClicked)
 end handler
 
 

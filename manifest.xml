@@ -2,10 +2,11 @@
   <name>org.openxtalk.nstoolbar</name>
   <title>NSToolbar Library</title>
   <author>Emily-Elizabeth Howard</author>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <license>community</license>
   <type>library</type>
   <requires name="com.livecode.foreign"/>
+  <requires name="com.livecode.objc"/>
   <requires name="com.livecode.engine"/>
   <requires name="com.livecode.string"/>
   <requires name="com.livecode.arithmetic"/>
@@ -25,5 +26,7 @@
   <handler name="toolbarSetVisible" parameters="in boolean" return="nothing"/>
   <handler name="toolbarIsVisible" parameters="" return="boolean"/>
   <handler name="toolbarItemIsEnabled" parameters="in string" return="boolean"/>
+  <handler name="toolbarSetItemImage" parameters="in string,in string" return="nothing"/>
+  <handler name="toolbarReactivate" parameters="" return="nothing"/>
   <handler name="toolbarDestroy" parameters="" return="nothing"/>
 </package>

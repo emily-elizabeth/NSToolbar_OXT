@@ -73,6 +73,14 @@ static NSMutableArray<NSString *> *sItemOrder(void) {
     return a;
 }
 
+// Maps NSString itemIdentifier -> NSImage (custom image data from LiveCode)
+static NSMutableDictionary<NSString *, NSImage *> *sItemImages(void) {
+    static NSMutableDictionary *d = nil;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{ d = [NSMutableDictionary dictionary]; });
+    return d;
+}
+
 // ---------------------------------------------------------------------------
 // NSToolbarDelegate implementation
 // ---------------------------------------------------------------------------
@@ -142,15 +150,15 @@ static NSMutableArray<NSString *> *sItemOrder(void) {
     item.toolTip      = meta[@"tooltip"] ?: @"";
 
     NSString *iconName = meta[@"iconName"] ?: @"";
-    if (iconName.length > 0) {
-        NSImage *img = nil;
+    NSImage *img = sItemImages()[itemIdentifier];
+    if (!img && iconName.length > 0) {
         if (@available(macOS 11.0, *)) {
             img = [NSImage imageWithSystemSymbolName:iconName
                                accessibilityDescription:label];
         }
         if (!img) img = [NSImage imageNamed:iconName];
-        if (img) item.image = img;
     }
+    if (img) item.image = img;
 
     item.target = self;
     item.action = @selector(toolbarItemClicked:);
@@ -165,15 +173,17 @@ static NSMutableArray<NSString *> *sItemOrder(void) {
 // ---------------------------------------------------------------------------
 
 void LCToolbarItemRegister(const char *itemIdentifier,
-                           const char *label,
+                           void *label,
                            const char *iconName,
-                           const char *tooltip) {
+                           void *tooltip) {
     if (!itemIdentifier) return;
     NSString *ident = [NSString stringWithUTF8String:itemIdentifier];
+    NSString *labelStr = label ? (__bridge NSString *)label : @"";
+    NSString *tooltipStr = tooltip ? (__bridge NSString *)tooltip : @"";
     sItemMeta()[ident] = @{
-        @"label":    [NSString stringWithUTF8String:label    ?: ""],
+        @"label":    labelStr,
         @"iconName": [NSString stringWithUTF8String:iconName ?: ""],
-        @"tooltip":  [NSString stringWithUTF8String:tooltip  ?: ""]
+        @"tooltip":  tooltipStr
     };
 }
 
@@ -197,6 +207,62 @@ void LCToolbarItemRemoveFromOrder(const char *itemIdentifier) {
 void LCToolbarItemsClear(void) {
     [sItemMeta() removeAllObjects];
     [sItemOrder() removeAllObjects];
+    [sItemImages() removeAllObjects];
+}
+
+void LCToolbarItemSetImageFile(void *toolbar, const char *itemId,
+                                const char *filePath) {
+    if (!itemId || !filePath) return;
+    NSString *ident = [NSString stringWithUTF8String:itemId];
+    NSString *path = [NSString stringWithUTF8String:filePath];
+    NSImage *img = [[NSImage alloc] initWithContentsOfFile:path];
+    if (!img) return;
+    sItemImages()[ident] = img;
+    if (toolbar) {
+        NSToolbar *tb = (__bridge NSToolbar *)toolbar;
+        for (NSToolbarItem *item in tb.items) {
+            if ([item.itemIdentifier isEqualToString:ident]) {
+                item.image = img;
+                break;
+            }
+        }
+    }
+}
+
+void LCToolbarItemSetNSImage(void *toolbar, const char *itemId, void *nsImage) {
+    if (!itemId || !nsImage) return;
+    NSString *ident = [NSString stringWithUTF8String:itemId];
+    NSImage *img = (__bridge NSImage *)nsImage;
+    sItemImages()[ident] = img;
+    // If toolbar is live, update the existing item immediately
+    if (toolbar) {
+        NSToolbar *tb = (__bridge NSToolbar *)toolbar;
+        for (NSToolbarItem *item in tb.items) {
+            if ([item.itemIdentifier isEqualToString:ident]) {
+                item.image = img;
+                break;
+            }
+        }
+    }
+}
+
+void LCToolbarItemSetImageBytes(void *toolbar, const char *itemId,
+                                 const unsigned char *bytes, int length) {
+    if (!itemId || !bytes || length <= 0) return;
+    NSString *ident = [NSString stringWithUTF8String:itemId];
+    NSData *data = [NSData dataWithBytes:bytes length:(NSUInteger)length];
+    NSImage *img = [[NSImage alloc] initWithData:data];
+    if (!img) return;
+    sItemImages()[ident] = img;
+    if (toolbar) {
+        NSToolbar *tb = (__bridge NSToolbar *)toolbar;
+        for (NSToolbarItem *item in tb.items) {
+            if ([item.itemIdentifier isEqualToString:ident]) {
+                item.image = img;
+                break;
+            }
+        }
+    }
 }
 
 void LCWindowRemoveToolbar(void *nsWindow) {

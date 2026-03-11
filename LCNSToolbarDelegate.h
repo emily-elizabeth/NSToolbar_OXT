@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-void  LCToolbarItemRegister(const char *itemIdentifier, const char *label,
-                            const char *iconName, const char *tooltip);
+void  LCToolbarItemRegister(const char *itemIdentifier, void *label,
+                            const char *iconName, void *tooltip);
 void  LCToolbarItemUnregister(const char *itemIdentifier);
 void  LCToolbarItemAppendToOrder(const char *itemIdentifier);
 void  LCToolbarItemRemoveFromOrder(const char *itemIdentifier);
@@ -31,6 +31,9 @@ void  LCToolbarSetItemEnabled(void *toolbar, const char *itemId, int enabled);
 void  LCToolbarSetVisible(void *toolbar, int visible);
 int   LCToolbarIsVisible(void *toolbar);
 int   LCToolbarItemIsEnabled(void *toolbar, const char *itemId);
+void  LCToolbarItemSetNSImage(void *toolbar, const char *itemId, void *nsImage);
+void  LCToolbarItemSetImageBytes(void *toolbar, const char *itemId, const unsigned char *bytes, int length);
+void  LCToolbarItemSetImageFile(void *toolbar, const char *itemId, const char *filePath);
 
 void *LCToolbarDelegateCreate(void);
 void  LCToolbarDelegateRelease(void *delegate);

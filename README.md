@@ -70,19 +70,23 @@ org.openxtalk.nstoolbar/code/x86_64-mac/nstoolbar_glue.dylib
 | Handler | Parameters | Description |
 |---|---|---|
 | `toolbarCreate` | `pWindowID, pIdentifier, pDisplayMode` | Create and attach toolbar to a stack window |
-| `toolbarAddItem` | `pItemId, pLabel, pIconName, pTooltip` | Add a toolbar item |
+| `toolbarAddItem` | `pItemId, pLabel, pIconName, pTooltip` | Add a toolbar item (Unicode labels supported) |
 | `toolbarRemoveItem` | `pItemId` | Remove a toolbar item by identifier |
 | `toolbarReloadItems` | — | Reload all items from the delegate (call after adding items) |
 | `toolbarSetItemEnabled` | `pItemId, pEnabled` | Enable or disable a toolbar item |
+| `toolbarSetItemImage` | `pItemId, pImagePath` | Set a custom image for a toolbar item from a file path |
 | `toolbarItemIsEnabled` | `pItemId` | Returns true if the item is enabled *(function)* |
 | `toolbarSetCustomizable` | `pCustomizable` | Enable or disable user toolbar customization |
 | `toolbarSetVisible` | `pVisible` | Show or hide the toolbar |
 | `toolbarIsVisible` | — | Returns true if the toolbar is visible *(function)* |
+| `toolbarReactivate` | — | Re-registers the click callback (call from `resumeStack` if needed) |
 | `toolbarDestroy` | — | Destroy the toolbar and release all resources |
 
 **`pDisplayMode`** values: `"iconAndLabel"` · `"iconOnly"` · `"labelOnly"` · `"default"`
 
 **`pIconName`** — SF Symbol name (macOS 11+), e.g. `"doc.badge.plus"`, `"folder"`, `"square.and.arrow.down"`. Falls back to `[NSImage imageNamed:]` on older systems.
+
+**`pLabel` and `pTooltip`** — Fully Unicode-aware. Japanese, Chinese, Arabic, emoji and other non-ASCII text are all supported.
 
 **Getter functions** are called with `()` in LiveCode script:
 ```livecodeserver
@@ -119,6 +123,17 @@ on toolbarItemClicked pItemId
 end toolbarItemClicked
 ```
 
+### Custom images from LiveCode image objects
+
+Export the image to a temp file first, then pass the path:
+
+```livecodeserver
+local tFile
+put specialFolderPath("temp") & "/myicon.png" into tFile
+export image "myIcon" to file tFile as PNG
+toolbarSetItemImage "myItem", tFile
+```
+
 ---
 
 ## Known Issues
@@ -132,6 +147,8 @@ on closeStack
 end closeStack
 ```
 
+**IDE only — toolbar clicks stop firing after screen lock** — In the OpenXTalk/LiveCode IDE, `toolbarItemClicked` may stop firing after the screen is locked and unlocked. Workarounds include navigating to another card or editing a script to refresh the IDE's message context. This does not affect standalone applications.
+
 ---
 
 ## Notes
@@ -139,3 +156,5 @@ end closeStack
 - Only one toolbar per library instance is managed. To attach toolbars to multiple windows, use separate library instances.
 - `toolbarReloadItems` must be called after all `toolbarAddItem` calls to populate the toolbar on creation. Items added later via `toolbarAddItem` appear immediately without needing a reload.
 - `toolbarItemClicked pItemId` is sent to the script object that called `toolbarCreate`.
+- `NSToolbarSpaceItem` (fixed space) is supported as an item identifier. `NSToolbarFlexibleSpaceItem` is not currently supported.
+- Call `toolbarReactivate` from `resumeStack` as a precaution if click delivery issues occur after returning from screen lock in standalone apps.
