@@ -192,6 +192,68 @@ void LCToolbarItemUnregister(const char *itemIdentifier) {
     [sItemMeta() removeObjectForKey:[NSString stringWithUTF8String:itemIdentifier]];
 }
 
+void LCToolbarSetItemLabel(void *toolbar, const char *itemId, void *label) {
+    if (!itemId || !label) return;
+    NSString *ident = [NSString stringWithUTF8String:itemId];
+    NSString *labelStr = (__bridge NSString *)label;
+    NSDictionary *meta = sItemMeta()[ident];
+    if (!meta) return;
+    sItemMeta()[ident] = @{
+        @"label":    labelStr,
+        @"iconName": meta[@"iconName"] ?: @"",
+        @"tooltip":  meta[@"tooltip"]  ?: @""
+    };
+    if (toolbar) {
+        NSToolbar *tb = (__bridge NSToolbar *)toolbar;
+        for (NSToolbarItem *item in tb.items) {
+            if ([item.itemIdentifier isEqualToString:ident]) {
+                item.label = labelStr;
+                item.paletteLabel = labelStr;
+                break;
+            }
+        }
+    }
+}
+
+void LCToolbarSetItemTooltip(void *toolbar, const char *itemId, void *tooltip) {
+    if (!itemId || !tooltip) return;
+    NSString *ident = [NSString stringWithUTF8String:itemId];
+    NSString *tooltipStr = (__bridge NSString *)tooltip;
+    NSDictionary *meta = sItemMeta()[ident];
+    if (!meta) return;
+    sItemMeta()[ident] = @{
+        @"label":    meta[@"label"]    ?: @"",
+        @"iconName": meta[@"iconName"] ?: @"",
+        @"tooltip":  tooltipStr
+    };
+    if (toolbar) {
+        NSToolbar *tb = (__bridge NSToolbar *)toolbar;
+        for (NSToolbarItem *item in tb.items) {
+            if ([item.itemIdentifier isEqualToString:ident]) {
+                item.toolTip = tooltipStr;
+                break;
+            }
+        }
+    }
+}
+
+// Returns a newline-separated list of current item identifiers.
+// Caller must free the returned string.
+char *LCToolbarGetItems(void *toolbar) {
+    if (!toolbar) return strdup("");
+    NSToolbar *tb = (__bridge NSToolbar *)toolbar;
+    NSMutableArray<NSString *> *idents = [NSMutableArray array];
+    for (NSToolbarItem *item in tb.items) {
+        [idents addObject:item.itemIdentifier];
+    }
+    NSString *joined = [idents componentsJoinedByString:@"\n"];
+    return strdup([joined UTF8String]);
+}
+
+void LCToolbarFreeString(char *str) {
+    if (str) free(str);
+}
+
 void LCToolbarItemAppendToOrder(const char *itemIdentifier) {
     if (!itemIdentifier) return;
     NSString *ident = [NSString stringWithUTF8String:itemIdentifier];

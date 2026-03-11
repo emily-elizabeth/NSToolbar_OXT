@@ -8,6 +8,10 @@ extern "C" {
 void  LCToolbarItemRegister(const char *itemIdentifier, void *label,
                             const char *iconName, void *tooltip);
 void  LCToolbarItemUnregister(const char *itemIdentifier);
+void  LCToolbarSetItemLabel(void *toolbar, const char *itemId, void *label);
+void  LCToolbarSetItemTooltip(void *toolbar, const char *itemId, void *tooltip);
+char *LCToolbarGetItems(void *toolbar);
+void  LCToolbarFreeString(char *str);
 void  LCToolbarItemAppendToOrder(const char *itemIdentifier);
 void  LCToolbarItemRemoveFromOrder(const char *itemIdentifier);
 void  LCToolbarItemsClear(void);

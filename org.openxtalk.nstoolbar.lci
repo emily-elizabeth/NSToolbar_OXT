@@ -15,12 +15,16 @@ import module org.openxtalk.nstoolbar
   unsafe handler toolbarAddItem(in pItemId as String, in pLabel as String, in pIconName as String, in pTooltip as String) returns nothing
   unsafe handler toolbarReloadItems() returns nothing
   unsafe handler toolbarRemoveItem(in pItemId as String) returns nothing
+  unsafe handler toolbarSetItemLabel(in pItemId as String, in pLabel as String) returns nothing
+  unsafe handler toolbarSetItemTooltip(in pItemId as String, in pLabel as String) returns nothing
+  unsafe handler toolbarSetDisplayMode(in pItemId as String) returns nothing
+  unsafe handler toolbarItems() returns String
   unsafe handler toolbarSetItemEnabled(in pItemId as String, in pEnabled as Boolean) returns nothing
   unsafe handler toolbarSetCustomizable(in pCustomizable as Boolean) returns nothing
   unsafe handler toolbarSetVisible(in pCustomizable as Boolean) returns nothing
   unsafe handler toolbarIsVisible() returns Boolean
   unsafe handler toolbarItemIsEnabled(in pItemId as String) returns Boolean
-  unsafe handler toolbarSetItemImage(in pItemId as String, in pImagePath as String) returns nothing
+  unsafe handler toolbarSetItemImage(in pItemId as String, in pLabel as String) returns nothing
   unsafe handler toolbarReactivate() returns nothing
   unsafe handler toolbarDestroy() returns nothing
 end module

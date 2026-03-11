@@ -70,15 +70,19 @@ org.openxtalk.nstoolbar/code/x86_64-mac/nstoolbar_glue.dylib
 | Handler | Parameters | Description |
 |---|---|---|
 | `toolbarCreate` | `pWindowID, pIdentifier, pDisplayMode` | Create and attach toolbar to a stack window |
-| `toolbarAddItem` | `pItemId, pLabel, pIconName, pTooltip` | Add a toolbar item (Unicode labels supported) |
+| `toolbarAddItem` | `pItemId, pLabel, pIconName, pTooltip` | Add a toolbar item |
 | `toolbarRemoveItem` | `pItemId` | Remove a toolbar item by identifier |
 | `toolbarReloadItems` | — | Reload all items from the delegate (call after adding items) |
+| `toolbarSetItemLabel` | `pItemId, pLabel` | Change the label of an existing toolbar item |
+| `toolbarSetItemTooltip` | `pItemId, pTooltip` | Change the tooltip of an existing toolbar item |
 | `toolbarSetItemEnabled` | `pItemId, pEnabled` | Enable or disable a toolbar item |
 | `toolbarSetItemImage` | `pItemId, pImagePath` | Set a custom image for a toolbar item from a file path |
 | `toolbarItemIsEnabled` | `pItemId` | Returns true if the item is enabled *(function)* |
+| `toolbarSetDisplayMode` | `pDisplayMode` | Change the toolbar display mode at runtime |
 | `toolbarSetCustomizable` | `pCustomizable` | Enable or disable user toolbar customization |
 | `toolbarSetVisible` | `pVisible` | Show or hide the toolbar |
 | `toolbarIsVisible` | — | Returns true if the toolbar is visible *(function)* |
+| `toolbarItems` | — | Returns a newline-delimited list of current item identifiers *(function)* |
 | `toolbarReactivate` | — | Re-registers the click callback (call from `resumeStack` if needed) |
 | `toolbarDestroy` | — | Destroy the toolbar and release all resources |
 
@@ -92,6 +96,7 @@ org.openxtalk.nstoolbar/code/x86_64-mac/nstoolbar_glue.dylib
 ```livecodeserver
 if toolbarIsVisible() then toolbarSetVisible false
 if not toolbarItemIsEnabled("saveDoc") then toolbarSetItemEnabled "saveDoc", true
+put toolbarItems() into tItems -- newline-delimited list of item identifiers
 ```
 
 ---

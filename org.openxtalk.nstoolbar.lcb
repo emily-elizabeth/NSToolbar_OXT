@@ -6,7 +6,7 @@
 
 library org.openxtalk.nstoolbar
 
-metadata version is "1.1.0"
+metadata version is "1.2.0"
 metadata author is "Emily-Elizabeth Howard"
 metadata title is "NSToolbar Library"
 metadata platform is "mac"
@@ -31,6 +31,25 @@ private foreign handler LCToolbarItemUnregister( \
         in pItemId as ZStringNative) \
     returns nothing \
     binds to "c:nstoolbar_glue>LCToolbarItemUnregister"
+
+private foreign handler LCToolbarSetItemLabel( \
+        in pToolbar as Pointer, \
+        in pItemId  as ZStringNative, \
+        in pLabel   as ObjcId) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarSetItemLabel"
+
+private foreign handler LCToolbarSetItemTooltip( \
+        in pToolbar as Pointer, \
+        in pItemId  as ZStringNative, \
+        in pTooltip as ObjcId) \
+    returns nothing \
+    binds to "c:nstoolbar_glue>LCToolbarSetItemTooltip"
+
+private foreign handler LCToolbarGetItems( \
+        in pToolbar as Pointer) \
+    returns ZStringNative \
+    binds to "c:nstoolbar_glue>LCToolbarGetItems"
 
 private foreign handler LCToolbarItemAppendToOrder( \
         in pItemId as ZStringNative) \
@@ -325,6 +344,64 @@ public unsafe handler toolbarRemoveItem(in pItemId as String) returns nothing
         end if
         put tIndex + 1 into tIndex
     end repeat
+end handler
+
+
+public unsafe handler toolbarSetItemLabel( \
+        in pItemId as String, \
+        in pLabel  as String) returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        return
+    end if
+    LCToolbarSetItemLabel(mToolbar, pItemId, StringToNSString(pLabel))
+end handler
+
+
+public unsafe handler toolbarSetItemTooltip( \
+        in pItemId  as String, \
+        in pTooltip as String) returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        return
+    end if
+    LCToolbarSetItemTooltip(mToolbar, pItemId, StringToNSString(pTooltip))
+end handler
+
+
+public unsafe handler toolbarSetDisplayMode(in pDisplayMode as String) returns nothing
+    if not IsMac() then
+        return
+    end if
+    if mToolbar is nothing then
+        return
+    end if
+    variable tMode as Integer
+    if pDisplayMode is "iconAndLabel" then
+        put 1 into tMode
+    else if pDisplayMode is "iconOnly" then
+        put 2 into tMode
+    else if pDisplayMode is "labelOnly" then
+        put 3 into tMode
+    else
+        put 0 into tMode  -- default
+    end if
+    LCToolbarSetDisplayMode(mToolbar, tMode)
+end handler
+
+
+public unsafe handler toolbarItems() returns String
+    if not IsMac() then
+        return ""
+    end if
+    if mToolbar is nothing then
+        return ""
+    end if
+    return LCToolbarGetItems(mToolbar)
 end handler
 
 
