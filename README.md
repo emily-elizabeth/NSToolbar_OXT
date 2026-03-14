@@ -1,6 +1,6 @@
 # org.openxtalk.nstoolbar
 
-A native macOS NSToolbar library for OpenXTalk and LiveCode, built using LiveCode Builder (LCB) with an Objective-C glue dylib. Adds a fully functional macOS toolbar to any stack window, with SF Symbol icon support and click delivery via script messages.
+A native macOS NSToolbar library for OpenXTalk and LiveCode, built using LiveCode Builder (LCB) with an Objective-C glue dylib. Supports multiple simultaneous toolbars, each identified by a string identifier. Toolbar item clicks are delivered as `toolbarItemClicked pToolbarId, pItemId` to the script object that called `toolbarCreate`.
 
 ---
 
@@ -20,7 +20,6 @@ org.openxtalk.nstoolbar/
 ├── LCNSToolbarDelegate.h           ← ObjC glue header
 ├── LCNSToolbarDelegate.m           ← ObjC glue implementation
 ├── build_glue.sh                   ← Script to build the universal dylib
-├── ExampleUsage.livecodescript     ← Example card script
 ├── api.lcdoc                       ← API documentation
 └── README.md                       ← This file
 ```
@@ -31,21 +30,21 @@ org.openxtalk.nstoolbar/
 
 ```
 LiveCode / OpenXTalk Script
-        │  public handler calls
+        │  public handler calls (pToolbarId, ...)
         ▼
 org.openxtalk.nstoolbar.lcb   (LCB library)
         │  c: foreign handler bindings
         ▼
 nstoolbar_glue.dylib           (Objective-C glue)
-        │  NSToolbarDelegate + target/action
+        │  per-toolbar LCToolbarContext + NSToolbarDelegate
         ▼
 NSToolbar / NSToolbarItem      (Cocoa)
-        │  ToolbarClickCallback (C function pointer)
+        │  ToolbarClickCallback(toolbarId, itemId)
         ▼
-LCB click handler → post "toolbarItemClicked" to caller
+LCB click handler → post "toolbarItemClicked" pToolbarId pItemId to caller
 ```
 
-The NSToolbarDelegate protocol is implemented entirely in the ObjC glue because its callbacks return `ObjcId`, which LCB's ffi layer cannot handle safely. All other operations (toolbar creation, window attachment, item insertion) are also routed through the glue via plain C functions to avoid `objc:` binding type mismatches. Click delivery uses a typed `foreign handler type` callback registered with the glue, dispatched on the main thread via `post`.
+Each toolbar is tracked by its identifier string in a global context registry (`LCToolbarContext`). The NSToolbarDelegate implementation is entirely in ObjC because its callbacks return `ObjcId`, which LCB's ffi layer cannot handle safely. A single global C callback receives both the toolbar identifier and item identifier, and LCB dispatches to the correct stored target ScriptObject.
 
 ---
 
@@ -67,24 +66,26 @@ org.openxtalk.nstoolbar/code/x86_64-mac/nstoolbar_glue.dylib
 
 ## Public API
 
+All handlers take a `pToolbarId` as their first parameter to identify which toolbar to operate on.
+
 | Handler | Parameters | Description |
 |---|---|---|
-| `toolbarCreate` | `pWindowID, pIdentifier, pDisplayMode` | Create and attach toolbar to a stack window |
-| `toolbarAddItem` | `pItemId, pLabel, pIconName, pTooltip` | Add a toolbar item |
-| `toolbarRemoveItem` | `pItemId` | Remove a toolbar item by identifier |
-| `toolbarReloadItems` | — | Reload all items from the delegate (call after adding items) |
-| `toolbarSetItemLabel` | `pItemId, pLabel` | Change the label of an existing toolbar item |
-| `toolbarSetItemTooltip` | `pItemId, pTooltip` | Change the tooltip of an existing toolbar item |
-| `toolbarSetItemEnabled` | `pItemId, pEnabled` | Enable or disable a toolbar item |
-| `toolbarSetItemImage` | `pItemId, pImagePath` | Set a custom image for a toolbar item from a file path |
-| `toolbarItemIsEnabled` | `pItemId` | Returns true if the item is enabled *(function)* |
-| `toolbarSetDisplayMode` | `pDisplayMode` | Change the toolbar display mode at runtime |
-| `toolbarSetCustomizable` | `pCustomizable` | Enable or disable user toolbar customization |
-| `toolbarSetVisible` | `pVisible` | Show or hide the toolbar |
-| `toolbarIsVisible` | — | Returns true if the toolbar is visible *(function)* |
-| `toolbarItems` | — | Returns a newline-delimited list of current item identifiers *(function)* |
-| `toolbarReactivate` | — | Re-registers the click callback (call from `resumeStack` if needed) |
-| `toolbarDestroy` | — | Destroy the toolbar and release all resources |
+| `toolbarCreate` | `pToolbarId, pWindowID, pDisplayMode` | Create and attach a toolbar to a stack window |
+| `toolbarAddItem` | `pToolbarId, pItemId, pLabel, pIconName, pTooltip` | Add a toolbar item |
+| `toolbarRemoveItem` | `pToolbarId, pItemId` | Remove a toolbar item by identifier |
+| `toolbarReloadItems` | `pToolbarId` | Reload all items from the delegate |
+| `toolbarSetItemLabel` | `pToolbarId, pItemId, pLabel` | Change the label of an existing item |
+| `toolbarSetItemTooltip` | `pToolbarId, pItemId, pTooltip` | Change the tooltip of an existing item |
+| `toolbarSetItemEnabled` | `pToolbarId, pItemId, pEnabled` | Enable or disable a toolbar item |
+| `toolbarSetItemImage` | `pToolbarId, pItemId, pImagePath` | Set a custom image from a file path |
+| `toolbarItemIsEnabled` | `pToolbarId, pItemId` | Returns true if the item is enabled *(function)* |
+| `toolbarSetDisplayMode` | `pToolbarId, pDisplayMode` | Change the toolbar display mode at runtime |
+| `toolbarSetCustomizable` | `pToolbarId, pCustomizable` | Enable or disable user customization |
+| `toolbarSetVisible` | `pToolbarId, pVisible` | Show or hide the toolbar |
+| `toolbarIsVisible` | `pToolbarId` | Returns true if the toolbar is visible *(function)* |
+| `toolbarItems` | `pToolbarId` | Returns a newline-delimited list of item identifiers *(function)* |
+| `toolbarReactivate` | `pToolbarId` | Re-registers the click callback (call from `resumeStack` if needed) |
+| `toolbarDestroy` | `pToolbarId` | Destroy the toolbar and release all resources |
 
 **`pDisplayMode`** values: `"iconAndLabel"` · `"iconOnly"` · `"labelOnly"` · `"default"`
 
@@ -92,31 +93,38 @@ org.openxtalk.nstoolbar/code/x86_64-mac/nstoolbar_glue.dylib
 
 **`pLabel` and `pTooltip`** — Fully Unicode-aware. Japanese, Chinese, Arabic, emoji and other non-ASCII text are all supported.
 
-**Getter functions** are called with `()` in LiveCode script:
-```livecodeserver
-if toolbarIsVisible() then toolbarSetVisible false
-if not toolbarItemIsEnabled("saveDoc") then toolbarSetItemEnabled "saveDoc", true
-put toolbarItems() into tItems -- newline-delimited list of item identifiers
+**Getter functions** require parentheses in LiveCode script:
+```livecode script
+if toolbarIsVisible("MainToolbar") then toolbarSetVisible "MainToolbar", false
+if not toolbarItemIsEnabled("MainToolbar", "saveDoc") then ...
+put toolbarItems("MainToolbar") into tItems  -- newline-delimited
 ```
 
 ---
 
 ## Usage
 
-```livecodeserver
+### Single toolbar
+
+```livecode script
 on openCard
-   toolbarCreate the windowID of this stack, "MyToolbar", "iconAndLabel"
-   toolbarAddItem "newDoc",   "New",   "doc.badge.plus",        "New Document"
-   toolbarAddItem "openDoc",  "Open",  "folder",                "Open Document"
-   toolbarAddItem "saveDoc",  "Save",  "square.and.arrow.down", "Save Document"
-   toolbarReloadItems
+   toolbarCreate "MainToolbar", the windowID of this stack, "iconAndLabel"
+   toolbarAddItem "MainToolbar", "newDoc",  "New",  "doc.badge.plus",        "New Document"
+   toolbarAddItem "MainToolbar", "openDoc", "Open", "folder",                "Open Document"
+   toolbarAddItem "MainToolbar", "saveDoc", "Save", "square.and.arrow.down", "Save Document"
+   toolbarReloadItems "MainToolbar"
 end openCard
 
-on closeCard
-   toolbarDestroy
-end closeCard
+on closeStack
+   toolbarSetVisible "MainToolbar", false
+   toolbarDestroy "MainToolbar"
+end closeStack
 
-on toolbarItemClicked pItemId
+on resumeStack
+   toolbarReactivate "MainToolbar"
+end resumeStack
+
+on toolbarItemClicked pToolbarId, pItemId
    switch pItemId
       case "newDoc"
          -- handle New
@@ -128,38 +136,87 @@ on toolbarItemClicked pItemId
 end toolbarItemClicked
 ```
 
+### Multiple toolbars
+
+```livecode script
+on openCard
+   -- Main window toolbar
+   toolbarCreate "MainToolbar", the windowID of stack "Main", "iconAndLabel"
+   toolbarAddItem "MainToolbar", "newDoc", "New", "doc.badge.plus", "New Document"
+   toolbarReloadItems "MainToolbar"
+
+   -- Inspector window toolbar
+   toolbarCreate "Inspector", the windowID of stack "Inspector", "iconOnly"
+   toolbarAddItem "Inspector", "attributes", "Attributes", "slider.horizontal.3", ""
+   toolbarAddItem "Inspector", "behaviours", "Behaviours", "bolt", ""
+   toolbarReloadItems "Inspector"
+end openCard
+
+on toolbarItemClicked pToolbarId, pItemId
+   switch pToolbarId
+      case "MainToolbar"
+         -- handle main toolbar clicks
+      case "Inspector"
+         -- handle inspector toolbar clicks
+   end switch
+end toolbarItemClicked
+```
+
 ### Custom images from LiveCode image objects
 
 Export the image to a temp file first, then pass the path:
 
-```livecodeserver
+```livecode script
 local tFile
 put specialFolderPath("temp") & "/myicon.png" into tFile
 export image "myIcon" to file tFile as PNG
-toolbarSetItemImage "myItem", tFile
+toolbarSetItemImage "MainToolbar", "myItem", tFile
+```
+
+---
+
+## Migrating from v1.x
+
+v2.0.0 is a breaking change. The key differences are:
+
+1. **All handlers now take `pToolbarId` as their first parameter.**
+2. **`toolbarCreate` parameter order changed** — `pToolbarId` is now first, before `pWindowID`.
+3. **`toolbarItemClicked` now receives two parameters** — `pToolbarId, pItemId` instead of just `pItemId`.
+
+```livecode script
+-- v1.x
+toolbarCreate the windowID of this stack, "MyToolbar", "iconAndLabel"
+toolbarAddItem "saveDoc", "Save", "square.and.arrow.down", "Save"
+on toolbarItemClicked pItemId ...
+
+-- v2.0
+toolbarCreate "MyToolbar", the windowID of this stack, "iconAndLabel"
+toolbarAddItem "MyToolbar", "saveDoc", "Save", "square.and.arrow.down", "Save"
+on toolbarItemClicked pToolbarId, pItemId ...
 ```
 
 ---
 
 ## Known Issues
 
-**Window shifts down on reopen** — When a stack is closed and reopened with the toolbar visible, the window position shifts downward. Calling `toolbarDestroy` before closing does not prevent this. The workaround is to hide the toolbar before closing the stack:
+**Window shifts down on reopen** — Hide the toolbar before closing as a workaround:
 
-```livecodeserver
+```livecode script
 on closeStack
-   toolbarSetVisible false
-   toolbarDestroy
+   toolbarSetVisible "MainToolbar", false
+   toolbarDestroy "MainToolbar"
 end closeStack
 ```
 
-**IDE only — toolbar clicks stop firing after screen lock** — In the OpenXTalk/LiveCode IDE, `toolbarItemClicked` may stop firing after the screen is locked and unlocked. Workarounds include navigating to another card or editing a script to refresh the IDE's message context. This does not affect standalone applications.
+**IDE only — toolbar clicks stop firing after screen lock** — In the OpenXTalk/LiveCode IDE, `toolbarItemClicked` may stop firing after the screen is locked and unlocked. Call `toolbarReactivate` from `resumeStack` as a workaround. This does not affect standalone applications.
+
+**NSToolbarFlexibleSpaceItem** — Flexible space items are not currently supported.
 
 ---
 
 ## Notes
 
-- Only one toolbar per library instance is managed. To attach toolbars to multiple windows, use separate library instances.
-- `toolbarReloadItems` must be called after all `toolbarAddItem` calls to populate the toolbar on creation. Items added later via `toolbarAddItem` appear immediately without needing a reload.
-- `toolbarItemClicked pItemId` is sent to the script object that called `toolbarCreate`.
-- `NSToolbarSpaceItem` (fixed space) is supported as an item identifier. `NSToolbarFlexibleSpaceItem` is not currently supported.
-- Call `toolbarReactivate` from `resumeStack` as a precaution if click delivery issues occur after returning from screen lock in standalone apps.
+- Each toolbar is independently managed by its identifier. There is no limit on the number of simultaneous toolbars.
+- `toolbarReloadItems` must be called after the initial set of `toolbarAddItem` calls. Items added later appear immediately.
+- `toolbarItemClicked pToolbarId, pItemId` is sent to the script object that called `toolbarCreate` for that toolbar.
+- `NSToolbarSpaceItem` (fixed space) is supported as an item identifier.

@@ -1,30 +1,30 @@
 import module org.openxtalk.nstoolbar
   use com.livecode.foreign
   use com.livecode.objc
+  use com.livecode.array
   use com.livecode.engine
-  use com.livecode.string
+  use com.livecode.list
   use com.livecode.arithmetic
   use com.livecode.binary
-  use com.livecode.list
   use com.livecode.logic
+  use com.livecode.string
   use com.livecode.type
   use com.livecode.system
-  use com.livecode.array
-  foreign handler type ToolbarClickCallback(in pItemId as ZStringNative) returns nothing
-  unsafe handler toolbarCreate(in pWindowID as Number, in pIdentifier as String, in pDisplayMode as String) returns nothing
-  unsafe handler toolbarAddItem(in pItemId as String, in pLabel as String, in pIconName as String, in pTooltip as String) returns nothing
-  unsafe handler toolbarReloadItems() returns nothing
-  unsafe handler toolbarRemoveItem(in pItemId as String) returns nothing
-  unsafe handler toolbarSetItemLabel(in pItemId as String, in pLabel as String) returns nothing
-  unsafe handler toolbarSetItemTooltip(in pItemId as String, in pLabel as String) returns nothing
-  unsafe handler toolbarSetDisplayMode(in pItemId as String) returns nothing
-  unsafe handler toolbarItems() returns String
-  unsafe handler toolbarSetItemEnabled(in pItemId as String, in pEnabled as Boolean) returns nothing
-  unsafe handler toolbarSetCustomizable(in pCustomizable as Boolean) returns nothing
-  unsafe handler toolbarSetVisible(in pCustomizable as Boolean) returns nothing
-  unsafe handler toolbarIsVisible() returns Boolean
-  unsafe handler toolbarItemIsEnabled(in pItemId as String) returns Boolean
-  unsafe handler toolbarSetItemImage(in pItemId as String, in pLabel as String) returns nothing
-  unsafe handler toolbarReactivate() returns nothing
-  unsafe handler toolbarDestroy() returns nothing
+  foreign handler type ToolbarClickCallback(in pToolbarId as ZStringNative, in pItemId as ZStringNative) returns nothing
+  unsafe handler toolbarCreate(in pToolbarId as String, in pWindowID as Number, in pDisplayMode as String) returns nothing
+  unsafe handler toolbarAddItem(in pToolbarId as String, in pItemId as String, in pLabel as String, in pIconName as String, in pTooltip as String) returns nothing
+  unsafe handler toolbarReloadItems(in pToolbarId as String) returns nothing
+  unsafe handler toolbarRemoveItem(in pToolbarId as String, in pItemId as String) returns nothing
+  unsafe handler toolbarSetItemLabel(in pToolbarId as String, in pItemId as String, in pLabel as String) returns nothing
+  unsafe handler toolbarSetItemTooltip(in pToolbarId as String, in pItemId as String, in pLabel as String) returns nothing
+  unsafe handler toolbarSetItemEnabled(in pToolbarId as String, in pItemId as String, in pEnabled as Boolean) returns nothing
+  unsafe handler toolbarItemIsEnabled(in pToolbarId as String, in pItemId as String) returns Boolean
+  unsafe handler toolbarSetItemImage(in pToolbarId as String, in pItemId as String, in pLabel as String) returns nothing
+  unsafe handler toolbarSetDisplayMode(in pToolbarId as String, in pItemId as String) returns nothing
+  unsafe handler toolbarSetCustomizable(in pToolbarId as String, in pCustomizable as Boolean) returns nothing
+  unsafe handler toolbarSetVisible(in pToolbarId as String, in pCustomizable as Boolean) returns nothing
+  unsafe handler toolbarIsVisible(in pToolbarId as String) returns Boolean
+  unsafe handler toolbarItems(in pToolbarId as String) returns String
+  unsafe handler toolbarReactivate(in pToolbarId as String) returns nothing
+  unsafe handler toolbarDestroy(in pToolbarId as String) returns nothing
 end module

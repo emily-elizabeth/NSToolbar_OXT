@@ -5,45 +5,60 @@
 extern "C" {
 #endif
 
-void  LCToolbarItemRegister(const char *itemIdentifier, void *label,
-                            const char *iconName, void *tooltip);
-void  LCToolbarItemUnregister(const char *itemIdentifier);
-void  LCToolbarSetItemLabel(void *toolbar, const char *itemId, void *label);
-void  LCToolbarSetItemTooltip(void *toolbar, const char *itemId, void *tooltip);
+// Context lifecycle
+void  LCToolbarContextCreate(const char *toolbarId);
+void  LCToolbarContextDestroy(const char *toolbarId);
+
+// Item registry
+void  LCToolbarItemRegister(const char *toolbarId, const char *itemIdentifier,
+                            void *label, const char *iconName, void *tooltip);
+void  LCToolbarItemUnregister(const char *toolbarId, const char *itemIdentifier);
+void  LCToolbarSetItemLabel(void *toolbar, const char *toolbarId,
+                            const char *itemId, void *label);
+void  LCToolbarSetItemTooltip(void *toolbar, const char *toolbarId,
+                              const char *itemId, void *tooltip);
+void  LCToolbarItemAppendToOrder(const char *toolbarId, const char *itemIdentifier);
+void  LCToolbarItemRemoveFromOrder(const char *toolbarId, const char *itemIdentifier);
+void  LCToolbarItemsClear(const char *toolbarId);
+
+// Image support
+void  LCToolbarItemSetImageFile(void *toolbar, const char *toolbarId,
+                                const char *itemId, const char *filePath);
+void  LCToolbarItemSetNSImage(void *toolbar, const char *toolbarId,
+                              const char *itemId, void *nsImage);
+
+// Toolbar introspection
 char *LCToolbarGetItems(void *toolbar);
 void  LCToolbarFreeString(char *str);
-void  LCToolbarItemAppendToOrder(const char *itemIdentifier);
-void  LCToolbarItemRemoveFromOrder(const char *itemIdentifier);
-void  LCToolbarItemsClear(void);
 
-typedef void (*LCToolbarClickCallback)(const char *itemIdentifier);
+// Click callback
+typedef void (*LCToolbarClickCallback)(const char *toolbarIdentifier,
+                                       const char *itemIdentifier);
 void  LCToolbarSetClickCallback(LCToolbarClickCallback cb);
 void  LCToolbarClearClickCallback(void);
-void  LCToolbarClearClickCallback(void);
-int   LCToolbarLastClickLength(void);
-void  LCToolbarGetLastClick(char *outBuf, int bufLen);
 
+// Toolbar lifecycle
 void *LCToolbarCreate(const char *identifier);
 void  LCToolbarRelease(void *toolbar);
 void  LCToolbarSetDisplayMode(void *toolbar, int mode);
 void  LCToolbarSetCustomizable(void *toolbar, int allow);
-void  LCToolbarAttachDelegate(void *toolbar, void *delegate);
-void  LCToolbarClearDelegate(void *toolbar);
-void  LCToolbarInsertItemAtIndex(void *toolbar, const char *itemId, int index);
-void  LCToolbarRemoveItemAtIndex(void *toolbar, int index);
-void  LCToolbarSetItemEnabled(void *toolbar, const char *itemId, int enabled);
 void  LCToolbarSetVisible(void *toolbar, int visible);
 int   LCToolbarIsVisible(void *toolbar);
+void  LCToolbarSetItemEnabled(void *toolbar, const char *itemId, int enabled);
 int   LCToolbarItemIsEnabled(void *toolbar, const char *itemId);
-void  LCToolbarItemSetNSImage(void *toolbar, const char *itemId, void *nsImage);
-void  LCToolbarItemSetImageBytes(void *toolbar, const char *itemId, const unsigned char *bytes, int length);
-void  LCToolbarItemSetImageFile(void *toolbar, const char *itemId, const char *filePath);
+void  LCToolbarInsertItemAtIndex(void *toolbar, const char *itemId, int index);
+void  LCToolbarRemoveItemAtIndex(void *toolbar, int index);
 
-void *LCToolbarDelegateCreate(void);
+// Delegate lifecycle
+void *LCToolbarDelegateCreate(const char *toolbarId);
 void  LCToolbarDelegateRelease(void *delegate);
+void  LCToolbarAttachDelegate(void *toolbar, void *delegate);
+void  LCToolbarClearDelegate(void *toolbar);
 
+// Window
 void *LCWindowFromNumber(long windowNumber);
 void  LCWindowAttachToolbar(void *window, void *toolbar);
+void  LCWindowRemoveToolbar(void *nsWindow);
 
 #ifdef __cplusplus
 }
